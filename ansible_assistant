@@ -1,0 +1,98 @@
+#!/usr/bin/env python
+import os
+import sys
+import glob
+import re
+import yaml
+
+# Filters for file exclusion
+FILTERS = '''
+# Those files are py files but not modules
+- '.*/__init__\.py'
+# Failure with a univention import problem
+- 'univention/.*\.py'
+# Problems with dbus not defined
+- 'network/nmcli\.py'
+# Problems with ZabbixAPI not defined
+- 'monitoring/zabbix_.*\.py'
+'''
+
+PATTERNS = '''
+# The column in urls is safe
+quoted_url:
+  regexp: "[\\\"\'][^ :]*://[^ =]*[\\\"\']"
+
+# This one has false_positive for now
+# compressed_yaml:
+#   regexp': '.*: .*?='
+
+# Real floats should be unquoted, strings quoted
+# unquoted_float:
+#   regexp: " \d\.\d[ $]"
+# quoted_float:
+#   regexp: "[\\\"\']\d\.\d[\\\"\']"
+'''
+
+YAMLLINT_CONFIGS = '''
+extends: default
+
+rules:
+  document-start:
+    present: false
+  empty-lines:
+    max: 2
+    max-start: 2
+    max-end: 2
+'''
+
+# Load the file in an object and return it
+def load_file(file_path):
+    module = dict()
+    with open(file_path) as f:
+        exec(f.read(), module)
+    return module
+
+# def write_file(file_path, content):
+    
+
+# Load all files in given folder
+def load_files(folder, filters = ['.*/__init__\.py']):
+    os.chdir(folder)
+    modules = {}
+    for file_name in glob.iglob("**/*.py"):
+        skip = 0
+        for f in filters:
+            if re.search(f, file_name, re.IGNORECASE):
+                skip = 1
+        if skip == 0:
+            file_path = os.getcwd() + '/' + file_name
+            modules[file_name] = load_file(file_path)
+    return modules
+
+def search_patterns(content, patterns):
+    results = []
+    for pattern in patterns:
+        p = re.compile(patterns[pattern]['regexp'])
+        matches = p.findall(content)
+        for match in matches:
+            results.append({'pattern': pattern, 'string': match})
+    return results
+
+# If we have a filename, use it otherwise search them recursively
+if len(sys.argv) > 1:
+    from yamllint.config import YamlLintConfig, YamlLintConfigError
+    from yamllint.linter import PROBLEM_LEVELS
+    from yamllint import linter
+
+    r_path = sys.argv[1]
+    file_path = os.getcwd() + '/' + r_path
+    m = load_file(file_path)
+    print (m['EXAMPLES'])
+    for l in linter.run(m['EXAMPLES'], YamlLintConfig(YAMLLINT_CONFIGS)):
+        print (l)
+else:
+    ms = load_files(os.getcwd(), yaml.load(FILTERS))
+    for m in ms:
+        results = search_patterns(ms[m]['EXAMPLES'], yaml.load(PATTERNS))
+        for result in results:
+            print(m + ' ' + result['pattern'] + ' ' + result['string'])
