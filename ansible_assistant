@@ -9,10 +9,22 @@ import yaml
 FILTERS = '''
 # Those files are py files but not modules
 - '.*/__init__\.py'
+
+# Core
+# ImportError: cannot import name format_attributes
+- 'files/stat\.py'
+# ImportError: cannot import name fail_if_missing
+- 'system/service\.py'
+# ImportError: cannot import name sysv_exists
+- 'system/systemd\.py'
+
+# Extra
+# https://github.com/ansible/ansible-modules-extras/pull/3662
+- 'system/sefcontext\.py'
 # Failure with a univention import problem
 - 'univention/.*\.py'
-# Problems with dbus not defined
-- 'network/nmcli\.py'
+# https://github.com/ansible/ansible-modules-extras/pull/3664
+#- 'network/nmcli\.py'
 # Problems with ZabbixAPI not defined
 - 'monitoring/zabbix_.*\.py'
 '''
@@ -60,6 +72,7 @@ def load_files(folder, filters = ['.*/__init__\.py']):
     os.chdir(folder)
     modules = {}
     for file_name in glob.iglob("**/*.py"):
+        print(file_name)
         skip = 0
         for f in filters:
             if re.search(f, file_name, re.IGNORECASE):
