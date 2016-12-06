@@ -24,15 +24,24 @@ FILTERS = '''
 # Failure with a univention import problem
 - 'univention/.*\.py'
 # https://github.com/ansible/ansible-modules-extras/pull/3664
-#- 'network/nmcli\.py'
-# Problems with ZabbixAPI not defined
+- 'network/nmcli\.py'
+# https://github.com/ansible/ansible-modules-extras/pull/3665
 - 'monitoring/zabbix_.*\.py'
 '''
 
 PATTERNS = '''
 # The column in urls is safe
 quoted_url:
-  regexp: "[\\\"\'][^ :]*://[^ =]*[\\\"\']"
+  regexp: "[\\\"'][^ :]*://[^ =]*[\\\"']"
+
+graphs_without_spaces:
+  regexp: '\\{\\{\S.*\S\\}\\}'
+
+inline_arrays:
+  regexp: '\\[[^\\]\n,]*,[^\\]\n]*\\]'
+
+inline objects:
+  regexp: '\\{.*?:.*?\\}'
 
 # This one has false_positive for now
 # compressed_yaml:
@@ -72,7 +81,7 @@ def load_files(folder, filters = ['.*/__init__\.py']):
     os.chdir(folder)
     modules = {}
     for file_name in glob.iglob("**/*.py"):
-        print(file_name)
+#        print(file_name)
         skip = 0
         for f in filters:
             if re.search(f, file_name, re.IGNORECASE):
@@ -91,18 +100,20 @@ def search_patterns(content, patterns):
             results.append({'pattern': pattern, 'string': match})
     return results
 
-# If we have a filename, use it otherwise search them recursively
-if len(sys.argv) > 1:
+def validate_yaml(content):
     from yamllint.config import YamlLintConfig, YamlLintConfigError
     from yamllint.linter import PROBLEM_LEVELS
     from yamllint import linter
+    return linter.run(m['EXAMPLES'], YamlLintConfig(YAMLLINT_CONFIGS))
 
+# If we have a filename, use it otherwise search them recursively
+if len(sys.argv) > 1:
     r_path = sys.argv[1]
     file_path = os.getcwd() + '/' + r_path
     m = load_file(file_path)
     print (m['EXAMPLES'])
-    for l in linter.run(m['EXAMPLES'], YamlLintConfig(YAMLLINT_CONFIGS)):
-        print (l)
+    for error in validate_yaml(m['EXAMPLES']):
+        print (error)
 else:
     ms = load_files(os.getcwd(), yaml.load(FILTERS))
     for m in ms:
