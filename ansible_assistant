@@ -104,7 +104,7 @@ def validate_yaml(content):
     from yamllint.config import YamlLintConfig, YamlLintConfigError
     from yamllint.linter import PROBLEM_LEVELS
     from yamllint import linter
-    return linter.run(m['EXAMPLES'], YamlLintConfig(YAMLLINT_CONFIGS))
+    return linter.run(content, YamlLintConfig(YAMLLINT_CONFIGS))
 
 # If we have a filename, use it otherwise search them recursively
 if len(sys.argv) > 1:
@@ -120,3 +120,6 @@ else:
         results = search_patterns(ms[m]['EXAMPLES'], yaml.load(PATTERNS))
         for result in results:
             print(m + ' ' + result['pattern'] + ' ' + result['string'])
+        print(m)
+        for error in validate_yaml(ms[m]['EXAMPLES']):
+            print(error)
