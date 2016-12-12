@@ -11,28 +11,39 @@ FILTERS = '''
 - '.*/__init__\.py'
 
 # Core
-# ImportError: cannot import name format_attributes
+# Ansible 2.3 is needed
 - 'files/stat\.py'
-# ImportError: cannot import name fail_if_missing
+# Ansible 2.3 is needed
 - 'system/service\.py'
-# ImportError: cannot import name sysv_exists
+# Ansible 2.3 is needed
 - 'system/systemd\.py'
-
-# Extra
-# https://github.com/ansible/ansible-modules-extras/pull/3662
-- 'system/sefcontext\.py'
-# Failure with a univention import problem
-- 'univention/.*\.py'
-# https://github.com/ansible/ansible-modules-extras/pull/3664
-- 'network/nmcli\.py'
-# https://github.com/ansible/ansible-modules-extras/pull/3665
-- 'monitoring/zabbix_.*\.py'
 '''
 
 PATTERNS = '''
 # The column in urls is safe
 quoted_url:
-  regexp: "[\\\"'][^ :]*://[^ =]*[\\\"']"
+  regexp: '["''][^ :]*://[^ =]*["'']'
+
+shell:
+  regexp: '- shell'
+
+raw:
+  regexp: '- raw'
+
+command:
+  regexp: '- command'
+
+#key_value:
+#  regexp: '.*=.*'
+
+multiple_yamls:
+  regexp: '---'
+
+dots:
+  regexp: '\.\.\.'
+
+straight_ansible:
+  regexp: 'ansible .* \\-m .*'
 
 graphs_without_spaces:
   regexp: '\\{\\{\S.*\S\\}\\}'
@@ -42,6 +53,18 @@ inline_arrays:
 
 inline objects:
   regexp: '\\{.*?:.*?\\}'
+
+#quoted_mac_and_ipv6:
+#  regexp: '[''"][0-9a-f:]{4+}[''"]'
+
+localaction:
+  regexp: 'local_action'
+
+quoted_ip4:
+  regexp: '[''"]\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}[''"]'
+
+#quoted_plain_strings:
+#  regexp: '"[a-zA-Z0-9 ,]+"'
 
 # This one has false_positive for now
 # compressed_yaml:
@@ -120,6 +143,6 @@ else:
         results = search_patterns(ms[m]['EXAMPLES'], yaml.load(PATTERNS))
         for result in results:
             print(m + ' ' + result['pattern'] + ' ' + result['string'])
-        print(m)
-        for error in validate_yaml(ms[m]['EXAMPLES']):
-            print(error)
+#        print(m)
+#        for error in validate_yaml(ms[m]['EXAMPLES']):
+#            print(error)
