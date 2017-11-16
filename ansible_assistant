@@ -33,8 +33,8 @@ raw:
 command:
   regexp: '- command'
 
-#key_value:
-#  regexp: '.*=.*'
+key_value:
+  regexp: '.*=.*'
 
 multiple_yamls:
   regexp: '---'
